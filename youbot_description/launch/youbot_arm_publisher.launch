@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<launch>
+	
+	<param name="/use_sim_time" value="true" />
+	
+	<!-- start gazebo with empty environment-->
+	  <include file="$(find gazebo_ros)/launch/empty_world.launch">	    
+	    <!--<arg name="world_name" value="$(find youbot_gazebo)/worlds/sim_1.world"/>--><!--load your own environment here --> 
+		  <arg name="gui" value="true"/>	  
+	  </include>
+
+	<!-- send youbot urdf to param server -->
+	<param name="robot_description" command="$(find xacro)/xacro.py '$(find youbot_description)/robots/youbot_arm.urdf.xacro'"/>	
+
+	<!-- push robot_description to factory and spawn robot in gazebo -->
+	<node pkg="gazebo_ros" type="spawn_model" name="spawn_robot" respawn="false" output="screen"
+	args="-param robot_description
+	      -urdf
+	      -x 0.4
+	      -y 2
+	      -z 0.05
+	      -model youbot">
+	</node>
+		
+	<include file="$(find youbot_description)/launch/control/youbot_arm_control.launch" />
+        <include file="$(find youbot_description)/launch/control/youbot_gripper_control.launch" />
+	
+	
+	<node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+	  <param name="publish_frequency" type="double" value="100.0" />
+	</node>
+</launch>
