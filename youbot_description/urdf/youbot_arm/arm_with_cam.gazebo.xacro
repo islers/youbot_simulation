@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+	<xacro:macro name="youbot_arm_gazebo" params="name">
+
+		<gazebo reference="${name}_link_0">
+			<material value="youbot/DarkGrey" />
+			<turnGravityOff>false</turnGravityOff>
+			
+		</gazebo>
+
+		<gazebo reference="${name}_link_1">
+			<!--<material value="youbot/Orange" />-->
+			<turnGravityOff>false</turnGravityOff>
+			
+		</gazebo>
+
+		<gazebo reference="${name}_link_2">
+			<!--<material value="youbot/Orange" />-->
+			<turnGravityOff>false</turnGravityOff>
+			
+		</gazebo>
+
+		<gazebo reference="${name}_link_3">
+			<!--<material value="youbot/Orange" />-->
+			<turnGravityOff>false</turnGravityOff>
+			
+		</gazebo>
+
+		<gazebo reference="${name}_link_4">
+			<!--<material value="youbot/Orange" />-->
+			<turnGravityOff>false</turnGravityOff>
+			
+		</gazebo>
+
+		<gazebo reference="${name}_link_5">
+			<!--<material value="youbot/DarkGrey" />-->
+			<turnGravityOff>false</turnGravityOff>
+			
+		</gazebo>
+		
+		
+		<gazebo reference="camera">
+		  <!--<material>Gazebo/Red</material>-->
+		  <sensor type="camera" name="mvBlueFOX-ML/IGC200wC">
+		    <update_rate>30.0</update_rate>
+		    <camera name="head">
+		      <horizontal_fov>1.3962634</horizontal_fov>
+		      <image>
+			<width>752</width>
+			<height>480</height>
+			<format>R8G8B8</format>
+		      </image>
+		      <clip>
+			<near>0.02</near>
+			<far>100</far>
+		      </clip>
+		    </camera>
+		    <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+		      <alwaysOn>true</alwaysOn>
+		      <updateRate>30.0</updateRate>
+		      <cameraName>youbot/eye</cameraName>
+		      <imageTopicName>image_rect</imageTopicName>
+		      <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+		      <frameName>camera_link</frameName>
+		      <hackBaseline>0</hackBaseline>
+		      <distortionK1>0</distortionK1>
+		      <distortionK2>0.0</distortionK2>
+		      <distortionK3>0.0</distortionK3>
+		      <distortionT1>0.0</distortionT1>
+		      <distortionT2>0.0</distortionT2>
+		    </plugin>
+		  </sensor>
+		</gazebo>-
+
+	</xacro:macro>
+
+</robot>
