@@ -4,6 +4,7 @@
 	<xacro:include filename="$(find youbot_description)/urdf/youbot_arm/arm_with_cam.gazebo.xacro" />
 	<xacro:include filename="$(find youbot_description)/urdf/youbot_arm/arm.transmission.xacro" />
         <xacro:include filename="$(find youbot_description)/urdf/youbot_arm/limits.urdf.xacro" />
+	<xacro:include filename="$(find youbot_description)/urdf/youbot_arm/macros.xacro" />
 	
 	
 	<xacro:property name="cameraSize" value="0.03"/>
