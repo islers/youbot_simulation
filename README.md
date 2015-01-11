@@ -14,7 +14,7 @@ Note: Gazebo occasionally crashes at startup without any apparent reason. If the
 
 ### Youbot Simulation
 #### Setup
-KUKA provides 3D models of the Youbot along with controllers and launch files for simulation in Gazebo. The package has however not been updated since ROS Fuerte and is no longer working. You can clone the [catkinized and updated version](https://github.com/stewess/youbot_simulation), which should work out of the box under ROS Indigo and also with Gazebo 4. Just as the Youbot driver it still depends on PR2 and brics_actuator packages which you'll need to add if you haven't done so yet.
+KUKA provides 3D models of the Youbot along with controllers and launch files for simulation in Gazebo. The package has however not been updated since ROS Fuerte and is no longer working. What you find in this repository is a catkinized and updated version of the original, which should work out of the box under ROS Indigo and also with Gazebo 4. Just as the Youbot driver it still depends on PR2 and brics_actuator packages which you'll need to add if you haven't done so yet.
 #### What you get
 The simulation emulates the physics and all topics and messages you get with the real Youbot. This means that you can use any Youbot controller for the real Youbot or its simulation and any visualization for the real Youbot or its simulation (see the RViz chapter). Its behaviour should mirror the behaviour of the real Youbot.
 #### Launch the simulation
