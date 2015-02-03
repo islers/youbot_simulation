@@ -56,6 +56,8 @@
 #include <boost/units/systems/si/plane_angle.hpp>
 #include <boost/units/systems/si/angular_velocity.hpp>
 
+#include <control_msgs/FollowJointTrajectoryActionResult.h>
+
 
 JointTrajectoryAction::JointTrajectoryAction(JointStateObserver* jointStateObserver) : jointStateObserver(jointStateObserver)
 {
@@ -282,15 +284,21 @@ void JointTrajectoryAction::execute(const control_msgs::FollowJointTrajectoryGoa
 
     command.positions = armJointPositions;
     jointStateObserver->updatePosition(command);
+    
+    // now wait until completion
+    double joint_error_tolerance = 0.01; // no idea if that is too much
+    bool finished = false;
+    
     control_msgs::FollowJointTrajectoryResult result;
     result.error_code = control_msgs::FollowJointTrajectoryResult::SUCCESSFUL;
     as->setSucceeded(result);
+    return;    
 }
 
 void JointTrajectoryAction::jointStateCallback(const sensor_msgs::JointState& joint_state)
 {
     int k = current_state.name.size();
-
+    
     if (k != 0)
     {
         for (uint i = 0; i < joint_state.name.size(); i++)

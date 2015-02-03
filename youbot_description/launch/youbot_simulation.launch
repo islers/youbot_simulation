@@ -2,7 +2,7 @@
 <launch>
         <include file="$(find youbot_description)/launch/xacroload.launch">
 		<arg name="gui" value="true"/>
-		<arg name="model" value="$(find youbot_description)/robots/youbot_arm.urdf.xacro"/>
+		<arg name="model" value="$(find youbot_description)/robots/youbot.urdf.xacro"/>
 	</include>
 </launch>
 
