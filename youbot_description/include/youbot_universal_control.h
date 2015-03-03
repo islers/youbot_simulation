@@ -84,9 +84,7 @@ namespace controller {
         ros::NodeHandle nodeHandle;
         pr2_mechanism_model::RobotState *robotPtr;
         std::vector<pr2_mechanism_model::JointState*> joints;
-        std::vector<control_toolbox::Pid> pids_pos; // pid for position commands
-        std::vector<control_toolbox::Pid> pids_vel; // pid for velocity commands
-        std::vector<control_toolbox::Pid> pids_tor; // pid for torque commands
+        std::vector<control_toolbox::Pid> pids;
         ros::Time lastTime;
         std::vector <double> setPoints;
         std::vector <double> filteredVelocity;

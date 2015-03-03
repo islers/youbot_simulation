@@ -125,39 +125,17 @@ namespace controller {
         if (!nodeHandle.getParam("gains", gainsNS))
             gainsNS = nodeHandle.getNamespace() + "/gains";
 
-        pids_pos.resize(joints.size());
-        pids_vel.resize(joints.size());
-        pids_tor.resize(joints.size());
+        pids.resize(joints.size());
 
         for (unsigned int j = 0; j < joints.size(); ++j) {
-            if (!pids_pos[j].init(ros::NodeHandle(gainsNS + "/position/" + joints[j]->joint_->name))) {
-                ROS_ERROR("Can't setup position PID for the joint %s. (namespace: %s)", joints[j]->joint_->name.c_str(), nodeHandle.getNamespace().c_str());
+            if (!pids[j].init(ros::NodeHandle(gainsNS + "/" + joints[j]->joint_->name))) {
+                ROS_ERROR("Can't setup PID for the joint %s. (namespace: %s)", joints[j]->joint_->name.c_str(), nodeHandle.getNamespace().c_str());
                 return false;
             }
 
             double p_value = 0.0, i_value = 0.0, d_value = 0.0, i_max = 0.0, i_min = 0.0;
-            pids_pos[j].getGains(p_value, i_value, d_value, i_max, i_min);
-            ROS_DEBUG("position PID for joint %s: p=%f, i=%f, d=%f, i_max=%f, i_min=%f\n", joints[j]->joint_->name.c_str(), p_value, i_value, d_value, i_max, i_min);
-        }
-        for (unsigned int j = 0; j < joints.size(); ++j) {
-            if (!pids_vel[j].init(ros::NodeHandle(gainsNS + "/velocity/" + joints[j]->joint_->name))) {
-                ROS_ERROR("Can't setup velocity PID for the joint %s. (namespace: %s)", joints[j]->joint_->name.c_str(), nodeHandle.getNamespace().c_str());
-                return false;
-            }
-
-            double p_value = 0.0, i_value = 0.0, d_value = 0.0, i_max = 0.0, i_min = 0.0;
-            pids_vel[j].getGains(p_value, i_value, d_value, i_max, i_min);
-            ROS_DEBUG("velocity PID for joint %s: p=%f, i=%f, d=%f, i_max=%f, i_min=%f\n", joints[j]->joint_->name.c_str(), p_value, i_value, d_value, i_max, i_min);
-        }
-        for (unsigned int j = 0; j < joints.size(); ++j) {
-            if (!pids_tor[j].init(ros::NodeHandle(gainsNS + "/torque/" + joints[j]->joint_->name))) {
-                ROS_ERROR("Can't setup torque PID for the joint %s. (namespace: %s)", joints[j]->joint_->name.c_str(), nodeHandle.getNamespace().c_str());
-                return false;
-            }
-
-            double p_value = 0.0, i_value = 0.0, d_value = 0.0, i_max = 0.0, i_min = 0.0;
-            pids_tor[j].getGains(p_value, i_value, d_value, i_max, i_min);
-            ROS_DEBUG("torque PID for joint %s: p=%f, i=%f, d=%f, i_max=%f, i_min=%f\n", joints[j]->joint_->name.c_str(), p_value, i_value, d_value, i_max, i_min);
+            pids[j].getGains(p_value, i_value, d_value, i_max, i_min);
+            ROS_DEBUG("PID for joint %s: p=%f, i=%f, d=%f, i_max=%f, i_min=%f\n", joints[j]->joint_->name.c_str(), p_value, i_value, d_value, i_max, i_min);
         }
 
         positionCommandSubscriber = nodeHandle.subscribe("position_command", 1, &YouBotUniversalController::positionCommand, this);
@@ -187,12 +165,8 @@ namespace controller {
     void YouBotUniversalController::starting() {
         ROS_DEBUG("Starting velocity controls for the joints\n");
 
-        for (unsigned int i = 0; i < pids_pos.size(); ++i)
-	{
-            pids_pos[i].reset();
-            pids_vel[i].reset();
-            pids_tor[i].reset();
-	}
+        for (unsigned int i = 0; i < pids.size(); ++i)
+            pids[i].reset();
 
         // Initializing timer
         lastTime = robotPtr->getTime();
@@ -235,17 +209,17 @@ namespace controller {
             switch (currentControlMode) {
                 case YouBotUniversalController::POSITION:
                 {
-                    updateJointPosition(setPoints[i], joints[i], &pids_pos[i], dt);
+                    updateJointPosition(setPoints[i], joints[i], &pids[i], dt);
                     break;
                 }
                 case YouBotUniversalController::VELOCITY:
                 {
-                    updateJointVelocity(setPoints[i], joints[i], &pids_vel[i], dt, i);
+                    updateJointVelocity(setPoints[i], joints[i], &pids[i], dt, i);
                     break;
                 }
                 case YouBotUniversalController::TORQUE:
                 {
-                    updateJointTorque(setPoints[i], joints[i], &pids_tor[i], dt);
+                    updateJointTorque(setPoints[i], joints[i], &pids[i], dt);
                     break;
                 }
                 default:
