@@ -144,7 +144,9 @@ double JointTrajectoryAction::calculateVelocity(double actualAngle,
         double gain1 = getPositionGain();
         double gain2 = getVelocityGain();
 
-        error = gain1 * positionError + gain2 * velocityError;
+        //error = gain1 * positionError + gain2 * velocityError;
+	// this error calculation doesn't strike me as something senseful since this is the job of the PID controller (e.g. YoubotUniversalController), thus send the desired velocity directoly!
+	error = desiredVelocity;
 
     }
 
@@ -297,7 +299,15 @@ void JointTrajectoryAction::execute(const control_msgs::FollowJointTrajectoryGoa
 
 void JointTrajectoryAction::jointStateCallback(const sensor_msgs::JointState& joint_state)
 {
-    int k = current_state.name.size();
+    int k = joint_state.name.size();
+    
+    if( k>current_state.name.size() )
+    {
+      current_state.name.resize(k);
+      current_state.position.resize(k);
+      current_state.velocity.resize(k);
+    }
+    //int k = current_state.name.size();
     
     if (k != 0)
     {
