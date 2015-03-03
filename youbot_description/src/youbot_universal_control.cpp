@@ -225,9 +225,9 @@ namespace controller {
         sensor_msgs::JointState joint_state_msgs;
         pr2JointStateToJointStateMsgs(joints, joint_state_msgs);
 
-        if (jointTrajectoryAction)
+        /*if (jointTrajectoryAction) // disabled because the jointTrajectoryAction class only needs information about the current state for error calculations which are not used in the revised version
             jointTrajectoryAction->jointStateCallback(joint_state_msgs);
-
+	*/
         
         
         for (unsigned int i = 0; i < joints.size(); i++) {

@@ -10,45 +10,45 @@ arm_controller:
   gains:
     position:
       arm_joint_1:
-        p: 2000
+        p: 1000
         i: 0
         d: 0
       arm_joint_2:
-        p: 2000
+        p: 1000
         i: 0
         d: 0
       arm_joint_3: 
-        p: 2000
+        p: 1000
         i: 0
         d: 0
       arm_joint_4:
-        p: 2000
+        p: 1000
         i: 0
         d: 0
       arm_joint_5:
-        p: 2000
+        p: 1000
         i: 0
         d: 0
     velocity:
       arm_joint_1:
-        p: 1000
-        i: 1000
+        p: 300
+        i: 600
         d: 0
       arm_joint_2:
-        p: 1000
-        i: 1000
+        p: 300
+        i: 600
         d: 0
       arm_joint_3: 
-        p: 1000
-        i: 1000
+        p: 300
+        i: 600
         d: 0
       arm_joint_4:
-        p: 1000
-        i: 1000
+        p: 200
+        i: 800
         d: 0
       arm_joint_5:
-        p: 1000
-        i: 0
+        p: 120
+        i: 100
         d: 0
     torque:
       arm_joint_1:

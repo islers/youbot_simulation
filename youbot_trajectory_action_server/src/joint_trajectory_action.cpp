@@ -59,7 +59,8 @@
 #include <control_msgs/FollowJointTrajectoryActionResult.h>
 
 
-JointTrajectoryAction::JointTrajectoryAction(JointStateObserver* jointStateObserver) : jointStateObserver(jointStateObserver)
+JointTrajectoryAction::JointTrajectoryAction(JointStateObserver* jointStateObserver) : jointStateObserver(jointStateObserver),
+  use_position_commands_(true),ignore_time_(true)
 {
 
 
@@ -72,7 +73,8 @@ JointTrajectoryAction::JointTrajectoryAction(JointStateObserver* jointStateObser
 JointTrajectoryAction::JointTrajectoryAction(JointStateObserver* jointStateObserver,
                                              double positionGain,
                                              double velocityGain,
-                                             double frequency) : jointStateObserver(jointStateObserver)
+                                             double frequency) : jointStateObserver(jointStateObserver),
+  use_position_commands_(true),ignore_time_(true)
 {
 
 
@@ -82,7 +84,8 @@ JointTrajectoryAction::JointTrajectoryAction(JointStateObserver* jointStateObser
 
 }
 
-JointTrajectoryAction::JointTrajectoryAction(const JointTrajectoryAction& orig) : jointStateObserver(orig.jointStateObserver)
+JointTrajectoryAction::JointTrajectoryAction(const JointTrajectoryAction& orig) : jointStateObserver(orig.jointStateObserver),
+  use_position_commands_(true),ignore_time_(true)
 {
 
     setPositionGain(orig.getPositionGain());
@@ -125,6 +128,125 @@ double JointTrajectoryAction::getPositionGain() const
     return positionGain;
 }
 
+void JointTrajectoryAction::usePositionCommands()
+{
+  use_position_commands_ = true;
+}
+
+void JointTrajectoryAction::useVelocityCommands()
+{
+  use_position_commands_ = false;
+}
+
+void JointTrajectoryAction::dontIgnoreTime()
+{
+  ignore_time_ = false;
+}
+
+void JointTrajectoryAction::ignoreTime()
+{
+  ignore_time_ = true;
+}
+
+double JointTrajectoryAction::getVelocityAtTime( const KDL::Trajectory_Composite& trajectoryComposite,
+                             double elapsedTimeInSec)
+{
+
+    double velocity = 0;
+
+    if (trajectoryComposite.Duration() > 0 && elapsedTimeInSec <= trajectoryComposite.Duration())
+    {
+        double actualTime = elapsedTimeInSec;
+        double desiredVelocity = trajectoryComposite.Vel(actualTime).vel.x();
+	velocity = desiredVelocity;
+    }
+
+    return velocity;
+}
+
+double JointTrajectoryAction::getPositionAtTime( const KDL::Trajectory_Composite& trajectoryComposite,
+                             double elapsedTimeInSec)
+{
+
+    double position = 0;
+
+    if (trajectoryComposite.Duration() > 0 && elapsedTimeInSec <= trajectoryComposite.Duration())
+    {
+        double actualTime = elapsedTimeInSec;
+        double desiredAngle = trajectoryComposite.Pos(actualTime).p.x();
+	position = desiredAngle;
+	
+	return position;
+    }
+    else
+    {
+      throw std::runtime_error("JointTrajectoryAction::getPositionAtTime:: Time given exceeded the time available in the trajectory.");
+      return position; // (never called)
+    }
+
+}
+
+void JointTrajectoryAction::getAllCurrentVelocities( const KDL::Trajectory_Composite* trajectory,
+                     int numberOfJoints,
+                     ros::Time startTime,
+		     double currentTime,
+                     std::vector<double>& velocities)
+{
+
+    velocities.clear();
+    
+    double elapsedTime;
+    if( !ignore_time_ )
+      elapsedTime = ros::Duration(ros::Time::now() - startTime).toSec();
+    else
+      elapsedTime = currentTime;
+
+    for (int i = 0; i < numberOfJoints; ++i)
+    {
+        double velocity = getVelocityAtTime(trajectory[i],
+                                            elapsedTime);
+
+        velocities.push_back(velocity);
+
+    }
+
+}
+
+void JointTrajectoryAction::getAllCurrentPositions( const KDL::Trajectory_Composite* trajectory,
+                     int numberOfJoints,
+                     ros::Time startTime,
+		     double currentTime,
+                     std::vector<double>& positions)
+{
+
+    positions.clear();
+    
+    double elapsedTime;
+    if( !ignore_time_ )
+      elapsedTime = ros::Duration(ros::Time::now() - startTime).toSec();
+    else
+      elapsedTime = currentTime;
+
+    for (int i = 0; i < numberOfJoints; ++i)
+    {
+	double position;
+	
+	try
+	{
+	  position = getPositionAtTime(trajectory[i],
+                                            elapsedTime);
+	}
+	catch( std::runtime_error )
+	{
+	  return;
+	}
+
+        positions.push_back(position);
+
+    }
+
+}
+
 double JointTrajectoryAction::calculateVelocity(double actualAngle,
                                                 double actualVelocity,
                                                 const KDL::Trajectory_Composite& trajectoryComposite,
@@ -144,9 +266,7 @@ double JointTrajectoryAction::calculateVelocity(double actualAngle,
         double gain1 = getPositionGain();
         double gain2 = getVelocityGain();
 
-        //error = gain1 * positionError + gain2 * velocityError;
-	// this error calculation doesn't strike me as something senseful since this is the job of the PID controller (e.g. YoubotUniversalController), thus send the desired velocity directoly!
-	error = desiredVelocity;
+        error = gain1 * positionError + gain2 * velocityError; // this error calculation doesn't strike me as something meaningful since "detecting" errors and correcting them is the job of the PID controller (e.g. YoubotUniversalController), thus send the desired velocity directly!
 
     }
 
@@ -199,10 +319,12 @@ void JointTrajectoryAction::setTargetTrajectory(double angle1,
 void JointTrajectoryAction::execute(const control_msgs::FollowJointTrajectoryGoalConstPtr& goal, Server* as)
 {
 
+    /* unused: unnecessary without error calculations, reenable if using controlLoop/calculateVelocity
     current_state.name = goal->trajectory.joint_names;
     current_state.position.resize(current_state.name.size());
     current_state.velocity.resize(current_state.name.size());
     current_state.effort.resize(current_state.name.size());
+    */
 
     sensor_msgs::JointState angle1;
     angle1.name = goal->trajectory.joint_names;
@@ -216,7 +338,7 @@ void JointTrajectoryAction::execute(const control_msgs::FollowJointTrajectoryGoa
     angle2.velocity.resize(angle2.name.size());
     angle2.effort.resize(angle2.name.size());
 
-    const uint numberOfJoints = current_state.name.size();
+    const uint numberOfJoints = goal->trajectory.joint_names.size();//current_state.name.size();
     KDL::Trajectory_Composite trajectoryComposite[numberOfJoints];
 
     angle2.position = goal->trajectory.points.at(0).positions;
@@ -239,58 +361,80 @@ void JointTrajectoryAction::execute(const control_msgs::FollowJointTrajectoryGoa
     }
 
     const double dt = 1.0 / getFrequency();
-    std::vector<double> velocities;
+    std::vector<double> target_values; // position or velocity, little weird like that but don't want to rewrite whole code
     ros::Time startTime = ros::Time::now();
 
     for (double time = 0; time <= trajectoryComposite[0].Duration(); time = time + dt)
     {
-
+	/* // uh-uh (imho control loops are the task of the PID controller!)
         controlLoop(current_state.position,
                     current_state.velocity,
                     trajectoryComposite,
                     numberOfJoints,
                     startTime,
-                    velocities);
+                    target_values);
+        */
+	
+	// using velocity commands
+	if( !use_position_commands_ )
+	{
+	  getAllCurrentVelocities( trajectoryComposite, numberOfJoints, startTime, time, target_values );
+	  	  
+	  brics_actuator::JointVelocities command;
+	  std::vector <brics_actuator::JointValue> armJointVelocities;
+	  armJointVelocities.resize(numberOfJoints);
 
-        brics_actuator::JointVelocities command;
-        std::vector <brics_actuator::JointValue> armJointVelocities;
-        armJointVelocities.resize(current_state.name.size());
+	  for (uint j = 0; j < numberOfJoints; j++)
+	  {
+	      armJointVelocities[j].joint_uri = goal->trajectory.joint_names[j];//current_state.name.at(j);
+	      armJointVelocities[j].value = target_values[j];
+	      armJointVelocities[j].unit = boost::units::to_string(boost::units::si::radian_per_second);
+	  }
 
-        for (uint j = 0; j < numberOfJoints; j++)
-        {
-            armJointVelocities[j].joint_uri = current_state.name.at(j);
-            armJointVelocities[j].value = velocities[j];
-            armJointVelocities[j].unit = boost::units::to_string(boost::units::si::radian_per_second);
-        }
+	  command.velocities = armJointVelocities;
+	  jointStateObserver->updateVelocity(command);
+	}
+	else // using position commands
+	{
+	  getAllCurrentPositions( trajectoryComposite, numberOfJoints, startTime, time, target_values );
+	  
+	  brics_actuator::JointPositions command;
+	  std::vector <brics_actuator::JointValue> armJointPositions;
+	  armJointPositions.resize(numberOfJoints);
 
-        command.velocities = armJointVelocities;
-        jointStateObserver->updateVelocity(command);
+	  for (uint j = 0; j < numberOfJoints; j++)
+	  {
+	      armJointPositions[j].joint_uri = goal->trajectory.joint_names[j];//current_state.name.at(j);
+	      armJointPositions[j].value = target_values[j];
+	      armJointPositions[j].unit = boost::units::to_string(boost::units::si::radian);
+	  }
+
+	  command.positions = armJointPositions;
+	  jointStateObserver->updatePosition(command);
+	}
 
         ros::Duration(dt).sleep();
     }
 
+    // to ensure that at the end of the trajectory the robot is at the goal state, they issue a position command for that last state (especially for velocity control)
     sensor_msgs::JointState goal_state;
     goal_state.name = goal->trajectory.joint_names;
     goal_state.position = goal->trajectory.points.back().positions;
 
     brics_actuator::JointPositions command;
     std::vector <brics_actuator::JointValue> armJointPositions;
-    armJointPositions.resize(current_state.name.size());
+    armJointPositions.resize(numberOfJoints);
 
     for (uint j = 0; j < numberOfJoints; j++)
     {
-        armJointPositions[j].joint_uri = current_state.name.at(j);
+        armJointPositions[j].joint_uri = goal->trajectory.joint_names[j];//current_state.name.at(j);
         armJointPositions[j].value = goal_state.position.at(j);
         armJointPositions[j].unit = boost::units::to_string(boost::units::si::radian);
     }
 
     command.positions = armJointPositions;
     jointStateObserver->updatePosition(command);
-    
-    // now wait until completion
-    double joint_error_tolerance = 0.01; // no idea if that is too much
-    bool finished = false;
-    
+        
     control_msgs::FollowJointTrajectoryResult result;
     result.error_code = control_msgs::FollowJointTrajectoryResult::SUCCESSFUL;
     as->setSucceeded(result);
@@ -299,6 +443,7 @@ void JointTrajectoryAction::execute(const control_msgs::FollowJointTrajectoryGoa
 
 void JointTrajectoryAction::jointStateCallback(const sensor_msgs::JointState& joint_state)
 {
+  return;
     int k = joint_state.name.size();
     
     if( k>current_state.name.size() )
