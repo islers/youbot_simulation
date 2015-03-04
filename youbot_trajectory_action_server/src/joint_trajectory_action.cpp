@@ -60,7 +60,7 @@
 
 
 JointTrajectoryAction::JointTrajectoryAction(JointStateObserver* jointStateObserver) : jointStateObserver(jointStateObserver),
-  use_position_commands_(true),ignore_time_(true)
+  use_position_commands_(true),ignore_time_(true),no_interpolation_(true)
 {
 
 
@@ -74,7 +74,7 @@ JointTrajectoryAction::JointTrajectoryAction(JointStateObserver* jointStateObser
                                              double positionGain,
                                              double velocityGain,
                                              double frequency) : jointStateObserver(jointStateObserver),
-  use_position_commands_(true),ignore_time_(true)
+  use_position_commands_(true),ignore_time_(true),no_interpolation_(true)
 {
 
 
@@ -85,7 +85,7 @@ JointTrajectoryAction::JointTrajectoryAction(JointStateObserver* jointStateObser
 }
 
 JointTrajectoryAction::JointTrajectoryAction(const JointTrajectoryAction& orig) : jointStateObserver(orig.jointStateObserver),
-  use_position_commands_(true),ignore_time_(true)
+  use_position_commands_(true),ignore_time_(true),no_interpolation_(true)
 {
 
     setPositionGain(orig.getPositionGain());
@@ -339,81 +339,120 @@ void JointTrajectoryAction::execute(const control_msgs::FollowJointTrajectoryGoa
     angle2.effort.resize(angle2.name.size());
 
     const uint numberOfJoints = goal->trajectory.joint_names.size();//current_state.name.size();
-    KDL::Trajectory_Composite trajectoryComposite[numberOfJoints];
-
-    angle2.position = goal->trajectory.points.at(0).positions;
-    for (uint i = 1; i < goal->trajectory.points.size(); i++)
-    {
-        angle1.position = angle2.position;
-        angle2.position = goal->trajectory.points.at(i).positions;
-
-        double duration = (goal->trajectory.points.at(i).time_from_start -
-                goal->trajectory.points.at(i - 1).time_from_start).toSec();
-
-        for (uint j = 0; j < numberOfJoints; ++j)
-        {
-            setTargetTrajectory(angle1.position.at(j),
-                                angle2.position.at(j),
-                                duration,
-                                trajectoryComposite[j]);
-
-        }
-    }
-
     const double dt = 1.0 / getFrequency();
-    std::vector<double> target_values; // position or velocity, little weird like that but don't want to rewrite whole code
-    ros::Time startTime = ros::Time::now();
-
-    for (double time = 0; time <= trajectoryComposite[0].Duration(); time = time + dt)
+    
+    if( !no_interpolation_ )
     {
-	/* // uh-uh (imho control loops are the task of the PID controller!)
-        controlLoop(current_state.position,
-                    current_state.velocity,
-                    trajectoryComposite,
-                    numberOfJoints,
-                    startTime,
-                    target_values);
-        */
-	
-	// using velocity commands
-	if( !use_position_commands_ )
-	{
-	  getAllCurrentVelocities( trajectoryComposite, numberOfJoints, startTime, time, target_values );
-	  	  
-	  brics_actuator::JointVelocities command;
-	  std::vector <brics_actuator::JointValue> armJointVelocities;
-	  armJointVelocities.resize(numberOfJoints);
+      
+      KDL::Trajectory_Composite trajectoryComposite[numberOfJoints];
 
-	  for (uint j = 0; j < numberOfJoints; j++)
+      angle2.position = goal->trajectory.points.at(0).positions;
+      for (uint i = 1; i < goal->trajectory.points.size(); i++)
+      {
+	  angle1.position = angle2.position;
+	  angle2.position = goal->trajectory.points.at(i).positions;
+
+	  double duration = (goal->trajectory.points.at(i).time_from_start -
+		  goal->trajectory.points.at(i - 1).time_from_start).toSec();
+
+	  for (uint j = 0; j < numberOfJoints; ++j)
 	  {
-	      armJointVelocities[j].joint_uri = goal->trajectory.joint_names[j];//current_state.name.at(j);
-	      armJointVelocities[j].value = target_values[j];
-	      armJointVelocities[j].unit = boost::units::to_string(boost::units::si::radian_per_second);
+	      setTargetTrajectory(angle1.position.at(j),
+				  angle2.position.at(j),
+				  duration,
+				  trajectoryComposite[j]);
+
+	  }
+      }
+
+      std::vector<double> target_values; // position or velocity, little weird like that but don't want to rewrite whole code
+      ros::Time startTime = ros::Time::now();
+
+      for (double time = 0; time <= trajectoryComposite[0].Duration(); time = time + dt)
+      {
+	  /* // uh-uh (imho control loops are the task of the PID controller!)
+	  controlLoop(current_state.position,
+		      current_state.velocity,
+		      trajectoryComposite,
+		      numberOfJoints,
+		      startTime,
+		      target_values);
+	  */
+	  
+	  // using velocity commands
+	  if( !use_position_commands_ )
+	  {
+	    getAllCurrentVelocities( trajectoryComposite, numberOfJoints, startTime, time, target_values );
+		    
+	    brics_actuator::JointVelocities command;
+	    std::vector <brics_actuator::JointValue> armJointVelocities;
+	    armJointVelocities.resize(numberOfJoints);
+
+	    for (uint j = 0; j < numberOfJoints; j++)
+	    {
+		armJointVelocities[j].joint_uri = goal->trajectory.joint_names[j];//current_state.name.at(j);
+		armJointVelocities[j].value = target_values[j];
+		armJointVelocities[j].unit = boost::units::to_string(boost::units::si::radian_per_second);
+	    }
+
+	    command.velocities = armJointVelocities;
+	    jointStateObserver->updateVelocity(command);
+	  }
+	  else // using position commands
+	  {
+	    getAllCurrentPositions( trajectoryComposite, numberOfJoints, startTime, time, target_values );
+	    
+	    brics_actuator::JointPositions command;
+	    std::vector <brics_actuator::JointValue> armJointPositions;
+	    armJointPositions.resize(numberOfJoints);
+
+	    for (uint j = 0; j < numberOfJoints; j++)
+	    {
+		armJointPositions[j].joint_uri = goal->trajectory.joint_names[j];//current_state.name.at(j);
+		armJointPositions[j].value = target_values[j];
+		armJointPositions[j].unit = boost::units::to_string(boost::units::si::radian);
+	    }
+	    using namespace std;
+	    command.positions = armJointPositions;
+	    
+	    if( time<(4*dt) || time>(trajectoryComposite[0].Duration()-4*dt) )
+	      cout<<endl<<endl<<"issued position command is:"<<endl<<command<<endl<<endl;
+	    jointStateObserver->updatePosition(command);
 	  }
 
-	  command.velocities = armJointVelocities;
-	  jointStateObserver->updateVelocity(command);
-	}
-	else // using position commands
+	  ros::Duration(dt).sleep();
+      }
+    }
+    else
+    {
+      unsigned int next_trajectory_point = 0;
+      for (double time = 0; time <= (goal->trajectory.points.back().time_from_start.toSec()+dt); time = time + dt)
+      {
+	if( time >= goal->trajectory.points[next_trajectory_point].time_from_start.toSec() ) // about time to send next position command -> can never follow the set time since this point should at least already be reached now
 	{
-	  getAllCurrentPositions( trajectoryComposite, numberOfJoints, startTime, time, target_values );
-	  
 	  brics_actuator::JointPositions command;
 	  std::vector <brics_actuator::JointValue> armJointPositions;
 	  armJointPositions.resize(numberOfJoints);
-
+	  
 	  for (uint j = 0; j < numberOfJoints; j++)
 	  {
 	      armJointPositions[j].joint_uri = goal->trajectory.joint_names[j];//current_state.name.at(j);
-	      armJointPositions[j].value = target_values[j];
+	      armJointPositions[j].value = goal->trajectory.points[next_trajectory_point].positions[j];
 	      armJointPositions[j].unit = boost::units::to_string(boost::units::si::radian);
 	  }
-
 	  command.positions = armJointPositions;
 	  jointStateObserver->updatePosition(command);
+	  
+	  using namespace std;
+	  cout<<endl<<endl<<"issued position command is:"<<endl<<command<<endl<<endl;
+	  
+	  next_trajectory_point++;
+	  if( next_trajectory_point >= goal->trajectory.points.size() )
+	    break;
 	}
-
-        ros::Duration(dt).sleep();
+	
+	ros::Duration(dt).sleep();
+      }
     }
 
     // to ensure that at the end of the trajectory the robot is at the goal state, they issue a position command for that last state (especially for velocity control)

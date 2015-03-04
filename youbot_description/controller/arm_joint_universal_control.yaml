@@ -18,7 +18,7 @@ arm_controller:
         i: 0
         d: 0
       arm_joint_3: 
-        p: 1000
+        p: 500
         i: 0
         d: 0
       arm_joint_4:

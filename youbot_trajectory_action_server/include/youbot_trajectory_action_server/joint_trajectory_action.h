@@ -102,7 +102,8 @@ private:
   
     bool use_position_commands_; /// if true then only the positions of the trajectory are used, otherwise the velocities will be used - default is true
     bool ignore_time_; /// if true then each point in the trajectory will be commanded with no regard to the the time in the trajectory. Currently defaults to true because accurate trajectory following was desired and timing was of no interest for the task at hand for which this class was revised
-
+    bool no_interpolation_; /// don't interpolate positions of received trajectory, only resend what is received
+    
     double velocityGain; /// used as a weighting factor for the issued command - now unused
     double positionGain; /// used as a weighting factor for the issued command - now unused
     double frequency;
