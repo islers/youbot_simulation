@@ -415,8 +415,8 @@ void JointTrajectoryAction::execute(const control_msgs::FollowJointTrajectoryGoa
 	    using namespace std;
 	    command.positions = armJointPositions;
 	    
-	    if( time<(4*dt) || time>(trajectoryComposite[0].Duration()-4*dt) )
-	      cout<<endl<<endl<<"issued position command is:"<<endl<<command<<endl<<endl;
+	    //if( time<(4*dt) || time>(trajectoryComposite[0].Duration()-4*dt) )
+	    //  cout<<endl<<endl<<"issued position command is:"<<endl<<command<<endl<<endl;
 	    jointStateObserver->updatePosition(command);
 	  }
 
@@ -443,8 +443,8 @@ void JointTrajectoryAction::execute(const control_msgs::FollowJointTrajectoryGoa
 	  command.positions = armJointPositions;
 	  jointStateObserver->updatePosition(command);
 	  
-	  using namespace std;
-	  cout<<endl<<endl<<"issued position command is:"<<endl<<command<<endl<<endl;
+	  //using namespace std;
+	  //cout<<endl<<endl<<"issued position command is:"<<endl<<command<<endl<<endl;
 	  
 	  next_trajectory_point++;
 	  if( next_trajectory_point >= goal->trajectory.points.size() )
