@@ -4,6 +4,8 @@
  *
  * Author:
  * Alexey Zakharov
+ * 
+ * modified: S.Isler, 2015
  *
  *
  * This software is published under a dual-license: GNU Lesser General Public
