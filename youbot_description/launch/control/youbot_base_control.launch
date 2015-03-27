@@ -2,6 +2,8 @@
 <launch>
 
 	<param name="publish_frequency" type="double" value="50.0" />
+	
+	<param name="/base_odometry/perfect" value="true" />
 
         <!-- base controllers -->
         <include file="$(find pr2_controller_manager)/controller_manager.launch" />

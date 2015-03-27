@@ -244,7 +244,7 @@
 		
 		<joint name="cameramount" type="fixed">
 		  <!-- camera pointing forward or sideways -->
-		  <!--<origin xyz="-0.04 0 0" rpy="0 ${-M_PI/2.0} 0" />--><origin xyz="-0.04 -0.02 0" rpy="${M_PI/2} 0 ${-M_PI/2.0}" />
+		  <!--<origin xyz="-0.04 0 0" rpy="0 ${-M_PI/2.0} 0" />--><origin xyz="-0.04 -0.00 0" rpy="${M_PI/2} 0 ${-M_PI/2.0}" />
 		  <parent link="${name}_link_5"/>
 		  <child link="camera" />
 		</joint>
