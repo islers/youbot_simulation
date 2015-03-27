@@ -42,10 +42,12 @@
 		
 		
 		<gazebo reference="camera">
-		  <!--<material>Gazebo/Red</material>-->
-		  <sensor type="camera" name="mvBlueFOX-ML/IGC200wC">
+		  <sensor type="multicamera" name="stereo_camera">
+		    <!-- see MultiSenseSLPlugin.h for available modes -->
 		    <update_rate>30.0</update_rate>
-		    <camera name="head">
+		    <camera name="left">
+		      <!-- Spec sheet says 80deg X 45deg @ 1024x544pix.  Based on feedback
+			  from teams, we're instead doing 80deg X 80deg @ 800x800pix. -->
 		      <horizontal_fov>1.3962634</horizontal_fov>
 		      <image>
 			<width>752</width>
@@ -57,22 +59,38 @@
 			<far>100</far>
 		      </clip>
 		    </camera>
-		    <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+		    <camera name="right">
+		      <pose>0 -0.10 0 0 0 0</pose>
+		      <!-- Spec sheet says 80deg X 45deg @ 1024x544pix.  Based on feedback
+			  from teams, we're instead doing 80deg X 80deg @ 800x800pix. -->
+		      <horizontal_fov>1.3962634</horizontal_fov>
+		      <image>
+			<width>752</width>
+			<height>480</height>
+			<format>R8G8B8</format>
+		      </image>
+		      <clip>
+			<near>0.02</near>
+			<far>100</far>
+		      </clip>
+		    </camera>
+		    <plugin name="stereo_camera_controller" filename="libgazebo_ros_multicamera.so">
 		      <alwaysOn>true</alwaysOn>
-		      <updateRate>30.0</updateRate>
+		      <updateRate>0.0</updateRate>
 		      <cameraName>camera</cameraName>
-		      <imageTopicName>image_rect</imageTopicName>
+		      <imageTopicName>image_raw</imageTopicName>
 		      <cameraInfoTopicName>camera_info</cameraInfoTopicName>
-		      <frameName>camera_link</frameName>
-		      <hackBaseline>0.0</hackBaseline>
-		      <distortionK1>0</distortionK1>
+		      <frameName>cam_pos</frameName>
+		      <!--<rightFrameName>right_camera_optical_frame</rightFrameName>-->
+		      <hackBaseline>0.10</hackBaseline>
+		      <distortionK1>0.0</distortionK1>
 		      <distortionK2>0.0</distortionK2>
 		      <distortionK3>0.0</distortionK3>
 		      <distortionT1>0.0</distortionT1>
 		      <distortionT2>0.0</distortionT2>
 		    </plugin>
 		  </sensor>
-		</gazebo>-
+		</gazebo>
 
 	</xacro:macro>
 
